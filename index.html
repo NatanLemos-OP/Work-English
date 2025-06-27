@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora de Impostos</title>
+ <link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+
+<header>
+  <h1>Calculadora de Impostos</h1>
+</header>
+
+<nav>
+  <button onclick="mostrar('pf')">Pessoa Física</button>
+  <button onclick="mostrar('pj')">Pessoa Jurídica</button>
+</nav>
+
+
+<div id="pf" class="container hidden">
+  <h2>Impostos - Pessoa Física</h2>
+  <label>Receita Mensal (R$):</label>
+  <input type="number" id="receitaPF">
+
+  <label>Tipo de Atividade:</label>
+  <select id="atividadePF">
+    <option value="mei">MEI (6%)</option>
+    <option value="autonomo">Autônomo (20%)</option>
+  </select>
+
+  <button onclick="calcularPF()">Calcular</button>
+
+  <div id="resultadoPF" class="hidden">
+    <p><strong>Alíquota:</strong> <span id="aliquotaPF"></span>%</p>
+    <p><strong>Total de Imposto:</strong> R$ <span id="totalPF"></span></p>
+  </div>
+</div>
+
+<div id="pj" class="container hidden">
+  <h2>Impostos - Pessoa Jurídica</h2>
+  <label>Receita Bruta Acumulada (12 meses):</label>
+  <input type="number" id="receita12m">
+
+  <label>Receita do Mês Atual:</label>
+  <input type="number" id="receitaMes">
+
+  <label>Tipo de Atividade:</label>
+  <select id="atividadePJ">
+    <option value="comercio">Comércio (Anexo I)</option>
+    <option value="industria">Indústria (Anexo II)</option>
+    <option value="servico">Serviço (Anexo III)</option>
+  </select>
+
+  <button onclick="calcularPJ()">Calcular</button>
+
+  <div id="resultadoPJ" class="hidden">
+    <p><strong>Alíquota Nominal:</strong> <span id="aliqNominal"></span>%</p>
+    <p><strong>Alíquota Efetiva:</strong> <span id="aliqEfetiva"></span>%</p>
+    <p><strong>Total de Impostos:</strong> R$ <span id="totalImposto"></span></p>
+
+    <h4>Distribuição:</h4>
+    <table>
+      <thead>
+        <tr><th>Tributo</th><th>%</th><th>Valor (R$)</th></tr>
+      </thead>
+      <tbody id="tabelaImpostos"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  function mostrar(tipo) {
+    document.getElementById('pf').classList.add('hidden');
+    document.getElementById('pj').classList.add('hidden');
+    document.getElementById(tipo).classList.remove('hidden');
+  }
+
+  function calcularPF() {
+    const receita = parseFloat(document.getElementById('receitaPF').value);
+    const tipo = document.getElementById('atividadePF').value;
+    let aliquota = tipo === 'mei' ? 6 : 20;
+
+    const total = (receita * aliquota / 100).toFixed(2);
+    document.getElementById('aliquotaPF').innerText = aliquota;
+    document.getElementById('totalPF').innerText = total;
+    document.getElementById('resultadoPF').classList.remove('hidden');
+  }
+
+  const anexos = {
+    comercio: {
+      faixa: [
+        { limite: 180000, aliq: 4, deducao: 0 },
+        { limite: 360000, aliq: 7.3, deducao: 5940 }
+      ],
+      distribuicao: {
+        IRPJ: 0.04, CSLL: 0.035, Cofins: 0.1282, PIS: 0.0278, CPP: 0.415, ICMS: 0.354
+      }
+    },
+    industria: {
+      faixa: [
+        { limite: 180000, aliq: 4.5, deducao: 0 },
+        { limite: 360000, aliq: 7.8, deducao: 5940 }
+      ],
+      distribuicao: {
+        IRPJ: 0.045, CSLL: 0.035, Cofins: 0.124, PIS: 0.026, CPP: 0.415, ICMS: 0.355
+      }
+    },
+    servico: {
+      faixa: [
+        { limite: 180000, aliq: 6, deducao: 0 },
+        { limite: 360000, aliq: 11.2, deducao: 9360 }
+      ],
+      distribuicao: {
+        IRPJ: 0.06, CSLL: 0.035, Cofins: 0.1616, PIS: 0.035, CPP: 0.434, ISS: 0.2744
+      }
+    }
+  };
+
+  function calcularPJ() {
+    const receita12m = parseFloat(document.getElementById('receita12m').value);
+    const receitaMes = parseFloat(document.getElementById('receitaMes').value);
+    const tipo = document.getElementById('atividadePJ').value;
+
+    if (isNaN(receita12m) || isNaN(receitaMes) || receita12m <= 0 || receitaMes <= 0) {
+      alert("Preencha todos os campos corretamente.");
+      return;
+    }
+
+    const anexo = anexos[tipo];
+    const faixa = anexo.faixa.find(f => receita12m <= f.limite) || anexo.faixa[1];
+    const aliqNominal = faixa.aliq;
+    const deducao = faixa.deducao;
+    const aliqEfetiva = ((receita12m * aliqNominal / 100 - deducao) / receita12m) * 100;
+    const totalImposto = (receitaMes * aliqEfetiva / 100).toFixed(2);
+
+    document.getElementById('aliqNominal').innerText = aliqNominal.toFixed(2);
+    document.getElementById('aliqEfetiva').innerText = aliqEfetiva.toFixed(2);
+    document.getElementById('totalImposto').innerText = totalImposto;
+
+    const tbody = document.getElementById('tabelaImpostos');
+    tbody.innerHTML = '';
+    for (let tributo in anexo.distribuicao) {
+      const percentual = (anexo.distribuicao[tributo] * aliqEfetiva).toFixed(2);
+      const valor = (receitaMes * percentual / 100).toFixed(2);
+      tbody.innerHTML += `<tr><td>${tributo}</td><td>${percentual}%</td><td>R$ ${valor}</td></tr>`;
+    }
+
+    document.getElementById('resultadoPJ').classList.remove('hidden');
+  }
+</script>
+
+</body>
+</html>
