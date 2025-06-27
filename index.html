@@ -1,154 +1,174 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Calculadora de Impostos</title>
- <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Scheduler</title>
+  <style>
+    :root {
+      --primary-color: #4caf50;
+      --secondary-color: #2e7d32;
+      --background-color: #f0f2f5;
+      --text-color: #333;
+      --card-color: #ffffff;
+    }
 
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--background-color);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: var(--card-color);
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+      margin-bottom: 30px;
+    }
+
+    label {
+      font-weight: bold;
+      color: var(--text-color);
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0 20px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    input:focus, button:hover {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    button {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: var(--secondary-color);
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+    }
+
+    .day {
+      background: #e0e0e0;
+      padding: 15px;
+      text-align: center;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .day:hover {
+      background: #d5d5d5;
+    }
+
+    .day.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .reminder {
+      background: #e8f5e9;
+      border-left: 5px solid var(--primary-color);
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 8px;
+      color: #2e7d32;
+    }
+
+    .credits {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 14px;
+      color: #777;
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h1>📅 English Work</h1>
+    <h1>📅 Payment Scheduler</h1>
 
-<header>
-  <h1>Calculadora de Impostos</h1>
-</header>
+    <label for="descricao">💡 Accont Type:</label>
+    <input type="text" id="descricao" placeholder="e.g. Electricity, Internet...">
 
-<nav>
-  <button onclick="mostrar('pf')">Pessoa Física</button>
-  <button onclick="mostrar('pj')">Pessoa Jurídica</button>
-</nav>
+    <label for="empresa">🏢 Company:</label>
+    <input type="text" id="empresa" placeholder="e.g. Netflix, PowerCo, ISP...">
 
+    <label for="dia">🗓️ Select a day:</label>
+    <div class="calendar" id="calendario"></div>
 
-<div id="pf" class="container hidden">
-  <h2>Impostos - Pessoa Física</h2>
-  <label>Receita Mensal (R$):</label>
-  <input type="number" id="receitaPF">
+    <button onclick="agendarLembrete()">✅ Schedule Payment</button>
 
-  <label>Tipo de Atividade:</label>
-  <select id="atividadePF">
-    <option value="mei">MEI (6%)</option>
-    <option value="autonomo">Autônomo (20%)</option>
-  </select>
-
-  <button onclick="calcularPF()">Calcular</button>
-
-  <div id="resultadoPF" class="hidden">
-    <p><strong>Alíquota:</strong> <span id="aliquotaPF"></span>%</p>
-    <p><strong>Total de Imposto:</strong> R$ <span id="totalPF"></span></p>
+    <div id="lembretes"></div>
+    <div class="credits">
+      <p>Created by Natan Lemos, Luise Vieira, Guilherme Siqueira, and Vanessa Corrêa</p>
+    </div>
   </div>
-</div>
 
-<div id="pj" class="container hidden">
-  <h2>Impostos - Pessoa Jurídica</h2>
-  <label>Receita Bruta Acumulada (12 meses):</label>
-  <input type="number" id="receita12m">
+  <script>
+    const calendario = document.getElementById("calendario");
+    const lembretes = document.getElementById("lembretes");
+    let selectedDay = null;
 
-  <label>Receita do Mês Atual:</label>
-  <input type="number" id="receitaMes">
-
-  <label>Tipo de Atividade:</label>
-  <select id="atividadePJ">
-    <option value="comercio">Comércio (Anexo I)</option>
-    <option value="industria">Indústria (Anexo II)</option>
-    <option value="servico">Serviço (Anexo III)</option>
-  </select>
-
-  <button onclick="calcularPJ()">Calcular</button>
-
-  <div id="resultadoPJ" class="hidden">
-    <p><strong>Alíquota Nominal:</strong> <span id="aliqNominal"></span>%</p>
-    <p><strong>Alíquota Efetiva:</strong> <span id="aliqEfetiva"></span>%</p>
-    <p><strong>Total de Impostos:</strong> R$ <span id="totalImposto"></span></p>
-
-    <h4>Distribuição:</h4>
-    <table>
-      <thead>
-        <tr><th>Tributo</th><th>%</th><th>Valor (R$)</th></tr>
-      </thead>
-      <tbody id="tabelaImpostos"></tbody>
-    </table>
-  </div>
-</div>
-
-<script>
-  function mostrar(tipo) {
-    document.getElementById('pf').classList.add('hidden');
-    document.getElementById('pj').classList.add('hidden');
-    document.getElementById(tipo).classList.remove('hidden');
-  }
-
-  function calcularPF() {
-    const receita = parseFloat(document.getElementById('receitaPF').value);
-    const tipo = document.getElementById('atividadePF').value;
-    let aliquota = tipo === 'mei' ? 6 : 20;
-
-    const total = (receita * aliquota / 100).toFixed(2);
-    document.getElementById('aliquotaPF').innerText = aliquota;
-    document.getElementById('totalPF').innerText = total;
-    document.getElementById('resultadoPF').classList.remove('hidden');
-  }
-
-  const anexos = {
-    comercio: {
-      faixa: [
-        { limite: 180000, aliq: 4, deducao: 0 },
-        { limite: 360000, aliq: 7.3, deducao: 5940 }
-      ],
-      distribuicao: {
-        IRPJ: 0.04, CSLL: 0.035, Cofins: 0.1282, PIS: 0.0278, CPP: 0.415, ICMS: 0.354
-      }
-    },
-    industria: {
-      faixa: [
-        { limite: 180000, aliq: 4.5, deducao: 0 },
-        { limite: 360000, aliq: 7.8, deducao: 5940 }
-      ],
-      distribuicao: {
-        IRPJ: 0.045, CSLL: 0.035, Cofins: 0.124, PIS: 0.026, CPP: 0.415, ICMS: 0.355
-      }
-    },
-    servico: {
-      faixa: [
-        { limite: 180000, aliq: 6, deducao: 0 },
-        { limite: 360000, aliq: 11.2, deducao: 9360 }
-      ],
-      distribuicao: {
-        IRPJ: 0.06, CSLL: 0.035, Cofins: 0.1616, PIS: 0.035, CPP: 0.434, ISS: 0.2744
-      }
-    }
-  };
-
-  function calcularPJ() {
-    const receita12m = parseFloat(document.getElementById('receita12m').value);
-    const receitaMes = parseFloat(document.getElementById('receitaMes').value);
-    const tipo = document.getElementById('atividadePJ').value;
-
-    if (isNaN(receita12m) || isNaN(receitaMes) || receita12m <= 0 || receitaMes <= 0) {
-      alert("Preencha todos os campos corretamente.");
-      return;
+    // Generate days of the month
+    for (let i = 1; i <= 30; i++) {
+      const div = document.createElement("div");
+      div.classList.add("day");
+      div.textContent = i;
+      div.onclick = () => selectDay(div, i);
+      calendario.appendChild(div);
     }
 
-    const anexo = anexos[tipo];
-    const faixa = anexo.faixa.find(f => receita12m <= f.limite) || anexo.faixa[1];
-    const aliqNominal = faixa.aliq;
-    const deducao = faixa.deducao;
-    const aliqEfetiva = ((receita12m * aliqNominal / 100 - deducao) / receita12m) * 100;
-    const totalImposto = (receitaMes * aliqEfetiva / 100).toFixed(2);
-
-    document.getElementById('aliqNominal').innerText = aliqNominal.toFixed(2);
-    document.getElementById('aliqEfetiva').innerText = aliqEfetiva.toFixed(2);
-    document.getElementById('totalImposto').innerText = totalImposto;
-
-    const tbody = document.getElementById('tabelaImpostos');
-    tbody.innerHTML = '';
-    for (let tributo in anexo.distribuicao) {
-      const percentual = (anexo.distribuicao[tributo] * aliqEfetiva).toFixed(2);
-      const valor = (receitaMes * percentual / 100).toFixed(2);
-      tbody.innerHTML += `<tr><td>${tributo}</td><td>${percentual}%</td><td>R$ ${valor}</td></tr>`;
+    function selectDay(element, day) {
+      document.querySelectorAll(".day").forEach(d => d.classList.remove("active"));
+      element.classList.add("active");
+      selectedDay = day;
     }
 
-    document.getElementById('resultadoPJ').classList.remove('hidden');
-  }
-</script>
+    function agendarLembrete() {
+      const description = document.getElementById("descricao").value;
+      const company = document.getElementById("empresa").value;
+      if (!description || !company || !selectedDay) {
+        alert("Please fill in all fields and select a day.");
+        return;
+      }
+      const msg = `📌 Day ${selectedDay}: ${description} - ${company}`;
+      const div = document.createElement("div");
+      div.classList.add("reminder");
+      div.textContent = msg;
+      lembretes.appendChild(div);
 
+      document.getElementById("descricao").value = "";
+      document.getElementById("empresa").value = "";
+      document.querySelectorAll(".day").forEach(d => d.classList.remove("active"));
+      selectedDay = null;
+    }
+  </script>
 </body>
 </html>
